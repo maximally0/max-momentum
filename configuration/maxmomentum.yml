@@ -1,0 +1,19 @@
+# Max Momentum Brand Configuration
+# This file defines the brand identity layer for the server platform
+# Do not modify ServerType enums or core gameplay systems
+
+brand:
+  name: "Max Momentum"
+  short_name: "MM"
+  tagline: "build. compete. grow."
+  primary_color: "§6"      # Gold/Orange
+  secondary_color: "§e"    # Yellow
+  
+network:
+  cracked_supported: false
+  anti_toxicity_enabled: true
+  friendly_join_messages: true
+  
+display:
+  animated_scoreboard: true
+  use_brand_prefix: true
