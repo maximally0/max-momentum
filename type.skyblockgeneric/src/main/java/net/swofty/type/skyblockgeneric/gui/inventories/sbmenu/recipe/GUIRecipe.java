@@ -1,0 +1,130 @@
+package net.swofty.type.skyblockgeneric.gui.inventories.sbmenu.recipe;
+
+import lombok.SneakyThrows;
+import net.kyori.adventure.text.Component;
+import net.minestom.server.component.DataComponents;
+import net.minestom.server.inventory.InventoryType;
+import net.minestom.server.item.ItemStack;
+import net.minestom.server.item.Material;
+import net.swofty.commons.skyblock.item.ItemType;
+import net.swofty.type.generic.gui.inventory.ItemStackCreator;
+import net.swofty.type.generic.gui.v2.*;
+import net.swofty.type.generic.gui.v2.context.ViewContext;
+import net.swofty.type.generic.i18n.I18n;
+import net.swofty.type.skyblockgeneric.item.SkyBlockItem;
+import net.swofty.type.skyblockgeneric.item.components.CraftableComponent;
+import net.swofty.type.skyblockgeneric.item.crafting.SkyBlockRecipe;
+import net.swofty.type.skyblockgeneric.item.updater.PlayerItemUpdater;
+import net.swofty.type.skyblockgeneric.user.SkyBlockPlayer;
+
+import java.util.ArrayList;
+import java.util.List;
+
+public class GUIRecipe extends StatelessView {
+    private static final int[] CRAFT_SLOTS = new int[]{10, 11, 12, 19, 20, 21, 28, 29, 30};
+
+    private final SkyBlockItem item;
+    private final int recipeIndex;
+
+    public GUIRecipe(ItemType type) {
+        this(new SkyBlockItem(type), 0);
+    }
+
+    public GUIRecipe(SkyBlockItem item) {
+        this(item, 0);
+    }
+
+    public GUIRecipe(SkyBlockItem item, int recipeIndex) {
+        this.item = item;
+        this.recipeIndex = recipeIndex;
+    }
+
+    @Override
+    public ViewConfiguration<DefaultState> configuration() {
+        ItemType type = item.getAttributeHandler().getPotentialType();
+        String name = type != null ? type.getDisplayName() : "Unknown";
+        return new ViewConfiguration<>(I18n.string("gui_sbmenu.recipe.view.title", java.util.Map.of("item_name", name)), InventoryType.CHEST_6_ROW);
+    }
+
+    @SneakyThrows
+    @Override
+    public void layout(ViewLayout<DefaultState> layout, DefaultState state, ViewContext ctx) {
+        Components.fill(layout);
+        Components.close(layout, 49);
+        Components.back(layout, 48, ctx);
+
+        layout.slot(23, (s, c) -> ItemStackCreator.getStack(I18n.string("gui_sbmenu.recipe.view.crafting_table"), Material.CRAFTING_TABLE, 1,
+                I18n.lore("gui_sbmenu.recipe.view.crafting_table.lore")));
+
+        ItemType itemTypeLinker = item.getAttributeHandler().getPotentialType();
+        if (item.toConfigurableItem() == null) {
+            return;
+        }
+
+        List<SkyBlockRecipe<?>> recipes = SkyBlockRecipe.getFromType(itemTypeLinker);
+        if (recipes.isEmpty()) {
+            return;
+        }
+
+        int actualRecipeIndex = recipeIndex >= recipes.size() ? 0 : recipeIndex;
+        SkyBlockRecipe<?> recipe = recipes.get(actualRecipeIndex);
+
+        // Next recipe button
+        if (recipes.size() > actualRecipeIndex + 1) {
+            layout.slot(32, (s, c) -> ItemStackCreator.getStack(I18n.string("gui_sbmenu.recipe.view.next"), Material.ARROW, 1,
+                            I18n.lore("gui_sbmenu.recipe.view.next.lore")),
+                    (click, c) -> {
+                        c.push(new GUIRecipe(item, actualRecipeIndex + 1));
+                    });
+        }
+
+        // Previous recipe button
+        if (actualRecipeIndex > 0) {
+            layout.slot(14, (s, c) -> ItemStackCreator.getStack(I18n.string("gui_sbmenu.recipe.view.previous"), Material.ARROW, 1,
+                            I18n.lore("gui_sbmenu.recipe.view.previous.lore")),
+                    (click, c) -> {
+                        c.push(new GUIRecipe(item, actualRecipeIndex - 1));
+                    });
+        }
+
+        // Result
+        layout.slot(25, (s, c) -> {
+            SkyBlockPlayer player = (SkyBlockPlayer) c.player();
+            return PlayerItemUpdater.playerUpdate(player, recipe.getResult().getItemStack())
+                    .amount(recipe.getResult().getAmount());
+        });
+
+        // Ingredients
+        SkyBlockItem[] ingredients = recipe.getRecipeDisplay();
+        for (int i = 0; i < CRAFT_SLOTS.length && i < ingredients.length; i++) {
+            SkyBlockItem ingredient = ingredients[i];
+            int craftSlot = CRAFT_SLOTS[i];
+
+            if (ingredient != null) {
+                layout.slot(craftSlot, (s, c) -> {
+                    SkyBlockPlayer player = (SkyBlockPlayer) c.player();
+                    ItemStack.Builder builder = PlayerItemUpdater.playerUpdate(player, ingredient.getItemStack());
+
+                    if (ingredient.hasComponent(CraftableComponent.class)) {
+                        List<Component> existingLore = builder.build().get(DataComponents.LORE);
+                        ArrayList<Component> lore = existingLore != null ? new ArrayList<>(existingLore) : new ArrayList<>();
+                        lore.add(Component.text(" "));
+                        lore.add(Component.text(I18n.string("gui_sbmenu.recipe.view.click_to_view")));
+                        builder.set(DataComponents.LORE, lore);
+                    }
+
+                    if (ingredient.getAttributeHandler().shouldBeEnchanted())
+                        ItemStackCreator.enchant(builder);
+
+                    return builder;
+                }, (click, c) -> {
+                    if (ingredient.hasComponent(CraftableComponent.class)) {
+                        c.push(new GUIRecipe(ingredient, 0));
+                    }
+                });
+            } else {
+                layout.slot(craftSlot, ItemStack.AIR.builder());
+            }
+        }
+    }
+}
