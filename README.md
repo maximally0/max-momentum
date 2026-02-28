@@ -1,29 +1,17 @@
-# Hypixel SkyBlock
+# Max Momentum
 
-[<img src="https://discordapp.com/assets/e4923594e694a21542a489471ecffa50.svg" alt="Discord" height="55" />](https://discord.swofty.net)
-
-A 1.21.11 Minestom-based recreation of Hypixel SkyBlock with a properly abstracted, scalable microservices architecture.
+A 1.21.11 Minestom-based Minecraft server platform with a properly abstracted, scalable microservices architecture.
 
 > **Note**: This implementation is under active development and is not yet production-ready.
 
+## Source Code Availability
+
+This project is licensed under AGPL-3.0. Complete source code is available at:
+**https://github.com/maximally0/max-momentum**
+
 ## Documentation
 
-Full documentation is available at **[opensource.swofty.net](https://opensource.swofty.net)**
-
-- [Getting Started](https://opensource.swofty.net/docs/introduction)
-- [Requirements](https://opensource.swofty.net/docs/requirements)
-- [Setup Guide](https://opensource.swofty.net/docs/setup/proxy)
-- [Docker Deployment](https://opensource.swofty.net/docs/docker/setup)
-- [Server Types Reference](https://opensource.swofty.net/docs/reference/server-types)
-- [Services Reference](https://opensource.swofty.net/docs/reference/services)
-- [Troubleshooting](https://opensource.swofty.net/docs/troubleshooting)
-
-## Quick Links
-
-- [Releases](https://github.com/Swofty-Developments/HypixelSkyBlock/releases)
-- [Javadocs](https://swofty-developments.github.io/HypixelSkyBlock/)
-- [Discord](https://discord.swofty.net)
-- [Video Guide](https://www.youtube.com/watch?v=pxzJbjjQL-M)
+Documentation is available in the `website/` directory.
 
 ## Features
 
@@ -49,22 +37,18 @@ See the [full requirements](https://opensource.swofty.net/docs/requirements) for
 
 ```bash
 # Clone the repository
-git clone https://github.com/Swofty-Developments/HypixelSkyBlock.git
+git clone https://github.com/maximally0/max-momentum.git
 
 # Docker deployment
 docker-compose up --build
 ```
 
-For manual setup, follow the [documentation](https://opensource.swofty.net/docs/setup/proxy).
-
-## Related Projects
-
-- [HypixelForums](https://github.com/Swofty-Developments/HypixelForums) - Web forum integration
+For manual setup, see documentation in `website/docs/`.
 
 ## Credits
 
-Thanks to the Minestom community and all [contributors](https://github.com/Swofty-Developments/HypixelSkyBlock/graphs/contributors).
+Built with Minestom. Forked from [HypixelSkyBlock](https://github.com/Swofty-Developments/HypixelSkyBlock) (AGPL-3.0).
 
 ## License
 
-See repository for license details.
+This project is licensed under AGPL-3.0. See LICENSE file for details.
