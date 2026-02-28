@@ -70,7 +70,7 @@ dependencies {
     implementation("com.github.ben-manes.caffeine:caffeine:3.2.3")
     implementation("net.kyori:adventure-text-minimessage:4.25.0")
     implementation("dev.hollowcube:polar:1.15.0")
-    implementation("org.yaml:snakeyaml:2.0")
+    implementation("org.yaml:snakeyaml:2.6")
 }
 
 application {
