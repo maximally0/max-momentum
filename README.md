@@ -15,6 +15,7 @@ A high-performance, scalable Minecraft server platform built on Minestom with a 
 - [Features](#-features)
 - [Architecture](#-architecture)
 - [Requirements](#-requirements)
+  - [Potato PC Mode (4GB RAM)](#minimum-specifications-potato-pc-mode)
 - [Quick Start](#-quick-start)
 - [Installation](#-installation)
   - [Docker Deployment](#docker-deployment-recommended)
@@ -96,11 +97,19 @@ Max Momentum uses a distributed microservices architecture for scalability and f
 
 ## 💻 Requirements
 
-### Minimum Specifications
+### Recommended Specifications
 - **RAM**: 16GB (8GB for services, 8GB for game servers)
 - **CPU**: 6+ cores (12+ recommended for production)
 - **Storage**: 20GB SSD
 - **OS**: Linux (Ubuntu 22.04+), Windows 10+, macOS 12+
+
+### Minimum Specifications (Potato PC Mode)
+- **RAM**: 4GB + 2GB swap
+- **CPU**: 4 cores
+- **Storage**: 10GB SSD (HDD will be very slow)
+- **OS**: Linux (Ubuntu 22.04+), Windows 10+, macOS 12+
+- **Players**: 20-30 max concurrent
+- **Performance**: Acceptable with trade-offs (see below)
 
 ### Software Dependencies
 - **Java 25** - [Download OpenJDK 25](https://jdk.java.net/25/)
@@ -117,14 +126,75 @@ Max Momentum uses a distributed microservices architecture for scalability and f
 
 ## 🚀 Quick Start
 
+### Got a Good PC? (16GB RAM)
+```bash
+git clone https://github.com/maximally0/max-momentum.git
+cd max-momentum
+docker-compose up --build
+```
+
+### Got a Potato PC? (4GB RAM)
+
+**Linux/Mac (Easy Mode):**
+```bash
+git clone https://github.com/maximally0/max-momentum.git
+cd max-momentum
+chmod +x start-potato-pc.sh
+./start-potato-pc.sh
+```
+
+**Windows (Easy Mode):**
+```cmd
+git clone https://github.com/maximally0/max-momentum.git
+cd max-momentum
+start-potato-pc.bat
+```
+
+**Manual Setup:**
+```bash
+# Enable swap first (Linux only - prevents crashes)
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+
+# Start optimized setup
+docker-compose -f docker-compose.minimal.yml up --build
+```
+
+**Potato PC Trade-offs:** 20-30 players max, slower performance, more lag spikes. See [POTATO-PC-QUICK-START.md](POTATO-PC-QUICK-START.md) for full guide.
+
+Server available at `localhost:25565` after ~2-3 minutes.
+
+---
+
+## 📦 Installation
+
+### Prerequisites
+
+**For Standard Setup (16GB RAM):**
+- Java 25 - [Download OpenJDK 25](https://jdk.java.net/25/)
+- Docker & Docker Compose
+- 16GB RAM, 6+ CPU cores, 20GB SSD
+
+**For Potato PC Setup (4GB RAM):**
+- Java 25 - [Download OpenJDK 25](https://jdk.java.net/25/)
+- Docker & Docker Compose
+- 4GB RAM + 2GB swap, 4+ CPU cores, 10GB SSD
+- ⚠️ SSD highly recommended (HDD will be very slow)
+
 ### Prerequisites Check
 ```bash
 # Verify Java 25
 java -version  # Should show "openjdk version 25"
 
-# Verify Docker (if using Docker deployment)
+# Verify Docker
 docker --version
 docker-compose --version
+
+# Check available RAM
+free -h  # Linux
+wmic memorychip get capacity  # Windows
 ```
 
 ### Clone Repository
@@ -132,21 +202,6 @@ docker-compose --version
 git clone https://github.com/maximally0/max-momentum.git
 cd max-momentum
 ```
-
-### Docker Deployment (Recommended)
-```bash
-# Start all services
-docker-compose up --build
-
-# Or use minimal configuration (lower resource usage)
-docker-compose -f docker-compose.minimal.yml up --build
-```
-
-Server will be available at `localhost:25565` after ~2-3 minutes.
-
----
-
-## 📦 Installation
 
 ### Docker Deployment (Recommended)
 
@@ -169,10 +224,10 @@ export FORWARDING_SECRET=$(openssl rand -base64 32)
 
 #### 3. Start Services
 ```bash
-# Full deployment (all game modes)
+# Full deployment (all game modes) - Requires 16GB RAM
 docker-compose up -d
 
-# Minimal deployment (SkyBlock only)
+# Minimal deployment (optimized) - Requires 8GB RAM
 docker-compose -f docker-compose.minimal.yml up -d
 
 # View logs
@@ -181,6 +236,40 @@ docker-compose logs -f
 # Stop services
 docker-compose down
 ```
+
+#### 3b. Potato PC Setup (4GB RAM)
+
+If you have limited RAM, follow these steps:
+
+```bash
+# 1. Enable swap (REQUIRED to prevent crashes)
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+
+# Make swap permanent (optional)
+echo '/swapfile none swap sw 0 0' | sudo tee -a /etc/fstab
+
+# 2. Reduce player limit
+nano configuration/config.yml
+# Change max-players to 30
+
+# 3. Start optimized setup
+docker-compose -f docker-compose.minimal.yml up -d
+
+# 4. Monitor memory usage
+docker stats
+```
+
+**Potato PC Trade-offs:**
+- Player limit: 20-30 (vs 100+)
+- Chunk loading: Slower
+- Lag spikes: More frequent
+- Heavy farms: Will cause lag
+- Multiple simultaneous games: Not recommended
+
+**When to upgrade:** If swap usage > 1.5GB or services crash daily, you need more RAM.
 
 #### 4. Verify Deployment
 ```bash
@@ -531,7 +620,9 @@ Items are auto-generated from YAML configs:
 
 ## 📊 Performance Tuning
 
-### JVM Optimization
+### Standard Setup (16GB RAM)
+
+#### JVM Optimization
 ```bash
 # Recommended JVM flags
 java -Xmx8G -Xms4G \
@@ -554,6 +645,67 @@ java -Xmx8G -Xms4G \
      -XX:MaxTenuringThreshold=1 \
      -jar HypixelCore.jar
 ```
+
+### Potato PC Setup (4GB RAM)
+
+The `docker-compose.minimal.yml` is pre-configured for 4GB systems with:
+- Serial GC (more memory-efficient)
+- Reduced heap sizes (256MB per game server)
+- String deduplication enabled
+- MongoDB cache limited to 256MB
+- Redis limited to 128MB
+
+#### Additional Optimizations
+
+**1. Enable Swap (REQUIRED)**
+```bash
+sudo fallocate -l 2G /swapfile
+sudo chmod 600 /swapfile
+sudo mkswap /swapfile
+sudo swapon /swapfile
+```
+
+**2. Reduce Player Limits**
+Edit `configuration/config.yml`:
+```yaml
+server:
+  max-players: 30  # Down from 1000
+```
+
+**3. Disable Heavy Features**
+```yaml
+spark: false        # Profiler not needed
+anticheat: false    # Use if you trust players
+sandbox: false      # Development feature
+```
+
+**4. Monitor Memory**
+```bash
+# Real-time stats
+docker stats
+
+# Check swap usage
+free -h
+
+# View service logs
+docker-compose -f docker-compose.minimal.yml logs -f
+```
+
+**5. Performance Comparison**
+
+| Setup | RAM | Players | Features | Performance | Startup Command |
+|-------|-----|---------|----------|-------------|-----------------|
+| Full | 16GB | 100+ | All | Excellent | `docker-compose up` |
+| Minimal | 8GB | 50+ | All | Good | `docker-compose -f docker-compose.minimal.yml up` |
+| Potato | 4GB+2GB swap | 20-30 | All | Acceptable | `./start-potato-pc.sh` or `start-potato-pc.bat` |
+
+**Which setup should I use?**
+- **16GB+ RAM**: Use full setup (`docker-compose up`)
+- **8GB RAM**: Use minimal setup (`docker-compose -f docker-compose.minimal.yml up`)
+- **4GB RAM**: Use potato setup (`./start-potato-pc.sh` or manual with swap)
+- **Less than 4GB**: Not recommended, will crash frequently
+
+See `4GB-OPTIMIZED-GUIDE.md` for detailed potato PC tuning instructions.
 
 ### MongoDB Optimization
 ```javascript
@@ -648,6 +800,51 @@ environment:
 
 # Or use minimal configuration
 docker-compose -f docker-compose.minimal.yml up
+```
+
+#### Potato PC Specific Issues
+
+**Services Keep Crashing:**
+```bash
+# Check swap usage
+free -h  # Linux
+# If swap > 1.5GB, you need more RAM
+
+# Reduce heap sizes further in docker-compose.minimal.yml
+# Change -Xmx256M to -Xmx192M
+```
+
+**Extreme Lag:**
+```bash
+# Reduce player count in configuration/config.yml
+max-players: 20  # Down from 30
+
+# Disable heavy features
+spark: false
+anticheat: false
+
+# Check if using HDD (switch to SSD)
+df -Th  # Linux
+```
+
+**Docker Desktop (Windows) Issues:**
+```
+1. Open Docker Desktop Settings
+2. Resources → Memory → Set to 4GB minimum
+3. Resources → Disk Image Size → Set to 20GB minimum
+4. Apply & Restart
+```
+
+**Swap Not Working (Linux):**
+```bash
+# Verify swap is enabled
+swapon --show
+
+# If empty, enable it
+sudo swapon /swapfile
+
+# Check swap usage
+free -h
 ```
 
 ### Debug Mode

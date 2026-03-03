@@ -1,0 +1,219 @@
+x-forwarding-env: &forwarding_env
+  FORWARDING_SECRET: ${FORWARDING_SECRET:-change-me}
+
+services:
+  mongodb:
+    image: mongo:8.0.9
+    container_name: hypixel_mongo
+    environment:
+      MONGO_INITDB_DATABASE: Minestom
+      MONGO_URL: hypixel_mongo
+    volumes:
+      - ./configuration/mongo-init.sh:/docker-entrypoint-initdb.d/mongo-init.sh:ro
+      - mongodb-data:/data/db
+      - ./configuration/:/csv
+    ports:
+      - "27017:27017"
+    networks:
+      - hypixel_network
+    healthcheck:
+      test: |
+        mongosh --eval "db.adminCommand('ping').ok" --quiet > /dev/null 2>&1 || exit 1
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: ["mongod", "--quiet", "--wiredTigerCacheSizeGB", "0.5"]
+    deploy:
+      resources:
+        limits:
+          memory: 768M
+        reservations:
+          memory: 512M
+
+  redis:
+    image: redis:alpine
+    container_name: hypixel_redis
+    ports:
+      - "6379:6379"
+    networks:
+      - hypixel_network
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+    command: ["redis-server", "--maxmemory", "256mb", "--maxmemory-policy", "allkeys-lru", "--save", ""]
+    deploy:
+      resources:
+        limits:
+          memory: 256M
+        reservations:
+          memory: 128M
+
+  proxy:
+    build:
+      context: .
+      dockerfile: "./DockerFiles/Dockerfile.proxy"
+    container_name: hypixel_proxy
+    environment:
+      <<: *forwarding_env
+    ports:
+      - "25565:25565"
+    depends_on:
+      mongodb:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+    volumes:
+      - ./configuration:/app/configuration_files
+    networks:
+      - hypixel_network
+    healthcheck:
+      test: ["CMD", "nc", "-z", "localhost", "25565"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 512M
+        reservations:
+          memory: 256M
+
+  game_server_builder:
+    build:
+      context: .
+      dockerfile: "./DockerFiles/Dockerfile.game_server"
+    image: game_server_prepared
+    container_name: game_server_builder
+    volumes:
+      - ./configuration:/app/configuration_files
+    networks:
+      - hypixel_network
+
+  # Only essential SkyBlock servers
+  hypixelcore_island:
+    image: game_server_prepared
+    container_name: hypixelcore_island
+    restart: "unless-stopped"
+    environment:
+      <<: *forwarding_env
+      SERVICE_CMD: java -Xms256M -Xmx512M -XX:+UseSerialGC -XX:MaxRAMPercentage=75.0 -jar HypixelCore.jar SKYBLOCK_ISLAND
+    depends_on:
+      proxy:
+        condition: service_healthy
+      game_server_builder:
+        condition: service_started
+    volumes:
+      - ./configuration:/app/configuration_files
+    networks:
+      - hypixel_network
+    deploy:
+      resources:
+        limits:
+          memory: 640M
+        reservations:
+          memory: 256M
+
+  hypixelcore_hub:
+    image: game_server_prepared
+    container_name: hypixelcore_hub
+    restart: "unless-stopped"
+    environment:
+      <<: *forwarding_env
+      SERVICE_CMD: java -Xms256M -Xmx512M -XX:+UseSerialGC -XX:MaxRAMPercentage=75.0 -jar HypixelCore.jar SKYBLOCK_HUB
+    depends_on:
+      proxy:
+        condition: service_healthy
+      game_server_builder:
+        condition: service_started
+    volumes:
+      - ./configuration:/app/configuration_files
+    networks:
+      - hypixel_network
+    deploy:
+      resources:
+        limits:
+          memory: 640M
+        reservations:
+          memory: 256M
+
+  prototype_lobby:
+    image: game_server_prepared
+    container_name: prototype_lobby
+    restart: "unless-stopped"
+    environment:
+      <<: *forwarding_env
+      SERVICE_CMD: java -Xms128M -Xmx256M -XX:+UseSerialGC -XX:MaxRAMPercentage=75.0 -jar HypixelCore.jar PROTOTYPE_LOBBY
+    depends_on:
+      proxy:
+        condition: service_healthy
+      game_server_builder:
+        condition: service_started
+    volumes:
+      - ./configuration:/app/configuration_files
+    networks:
+      - hypixel_network
+    deploy:
+      resources:
+        limits:
+          memory: 384M
+        reservations:
+          memory: 128M
+
+  # Only critical services
+  service_api:
+    image: game_server_prepared
+    container_name: service_api
+    restart: "unless-stopped"
+    environment:
+      <<: *forwarding_env
+      SERVICE_CMD: java -Xms64M -Xmx128M -XX:+UseSerialGC -XX:MaxRAMPercentage=75.0 -jar ServiceAPI.jar
+    depends_on:
+      proxy:
+        condition: service_healthy
+      game_server_builder:
+        condition: service_started
+    volumes:
+      - ./configuration:/app/configuration_files
+    networks:
+      - hypixel_network
+    deploy:
+      resources:
+        limits:
+          memory: 192M
+        reservations:
+          memory: 64M
+
+  service_party:
+    image: game_server_prepared
+    container_name: service_party
+    restart: "unless-stopped"
+    environment:
+      <<: *forwarding_env
+      SERVICE_CMD: java -Xms64M -Xmx128M -XX:+UseSerialGC -XX:MaxRAMPercentage=75.0 -jar ServiceParty.jar
+    depends_on:
+      proxy:
+        condition: service_healthy
+      game_server_builder:
+        condition: service_started
+    volumes:
+      - ./configuration:/app/configuration_files
+    networks:
+      - hypixel_network
+    deploy:
+      resources:
+        limits:
+          memory: 192M
+        reservations:
+          memory: 64M
+
+volumes:
+  mongodb-data:
+    driver: local
+    name: mongo-data
+
+networks:
+  hypixel_network:
+    driver: bridge

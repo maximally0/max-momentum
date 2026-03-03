@@ -22,10 +22,14 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
-    command: ["mongod", "--quiet"]
+    command: ["mongod", "--quiet", "--wiredTigerCacheSizeGB", "0.25"]
+    deploy:
+      resources:
+        limits:
+          memory: 384M
 
   redis:
-    image: redis:latest
+    image: redis:alpine
     container_name: hypixel_redis
     ports:
       - "6379:6379"
@@ -36,6 +40,11 @@ services:
       interval: 10s
       timeout: 5s
       retries: 5
+    command: ["redis-server", "--maxmemory", "128mb", "--maxmemory-policy", "allkeys-lru", "--save", ""]
+    deploy:
+      resources:
+        limits:
+          memory: 192M
 
   proxy:
     build:
@@ -61,6 +70,10 @@ services:
       timeout: 5s
       retries: 5
       start_period: 10s
+    deploy:
+      resources:
+        limits:
+          memory: 384M
 
   game_server_builder:
     build:
@@ -80,7 +93,7 @@ services:
     restart: "unless-stopped"
     environment:
       <<: *forwarding_env
-      SERVICE_CMD: java -Xms512M -Xmx1G -jar HypixelCore.jar SKYBLOCK_ISLAND
+      SERVICE_CMD: java -Xms128M -Xmx256M -XX:+UseSerialGC -XX:MaxGCPauseMillis=50 -XX:+UseStringDeduplication -jar HypixelCore.jar SKYBLOCK_ISLAND
     depends_on:
       proxy:
         condition: service_healthy
@@ -90,6 +103,10 @@ services:
       - ./configuration:/app/configuration_files
     networks:
       - hypixel_network
+    deploy:
+      resources:
+        limits:
+          memory: 320M
 
   hypixelcore_hub:
     image: game_server_prepared
@@ -97,7 +114,7 @@ services:
     restart: "unless-stopped"
     environment:
       <<: *forwarding_env
-      SERVICE_CMD: java -Xms512M -Xmx1G -jar HypixelCore.jar SKYBLOCK_HUB
+      SERVICE_CMD: java -Xms128M -Xmx256M -XX:+UseSerialGC -XX:MaxGCPauseMillis=50 -XX:+UseStringDeduplication -jar HypixelCore.jar SKYBLOCK_HUB
     depends_on:
       proxy:
         condition: service_healthy
@@ -107,6 +124,10 @@ services:
       - ./configuration:/app/configuration_files
     networks:
       - hypixel_network
+    deploy:
+      resources:
+        limits:
+          memory: 320M
 
   hypixelcore_farming:
     image: game_server_prepared
@@ -114,7 +135,7 @@ services:
     restart: "unless-stopped"
     environment:
       <<: *forwarding_env
-      SERVICE_CMD: java -Xms512M -Xmx1G -jar HypixelCore.jar SKYBLOCK_THE_FARMING_ISLANDS
+      SERVICE_CMD: java -Xms128M -Xmx256M -XX:+UseSerialGC -XX:MaxGCPauseMillis=50 -XX:+UseStringDeduplication -jar HypixelCore.jar SKYBLOCK_THE_FARMING_ISLANDS
     depends_on:
       proxy:
         condition: service_healthy
@@ -124,6 +145,10 @@ services:
       - ./configuration:/app/configuration_files
     networks:
       - hypixel_network
+    deploy:
+      resources:
+        limits:
+          memory: 320M
 
   prototype_lobby:
     image: game_server_prepared
@@ -131,7 +156,7 @@ services:
     restart: "unless-stopped"
     environment:
       <<: *forwarding_env
-      SERVICE_CMD: java -Xms256M -Xmx512M -jar HypixelCore.jar PROTOTYPE_LOBBY
+      SERVICE_CMD: java -Xms64M -Xmx128M -XX:+UseSerialGC -XX:MaxGCPauseMillis=50 -XX:+UseStringDeduplication -jar HypixelCore.jar PROTOTYPE_LOBBY
     depends_on:
       proxy:
         condition: service_healthy
@@ -141,6 +166,10 @@ services:
       - ./configuration:/app/configuration_files
     networks:
       - hypixel_network
+    deploy:
+      resources:
+        limits:
+          memory: 192M
 
   # BedWars mini-game
   bedwars_lobby:
@@ -149,7 +178,7 @@ services:
     restart: "unless-stopped"
     environment:
       <<: *forwarding_env
-      SERVICE_CMD: java -Xms256M -Xmx512M -jar HypixelCore.jar BEDWARS_LOBBY
+      SERVICE_CMD: java -Xms64M -Xmx128M -XX:+UseSerialGC -XX:MaxGCPauseMillis=50 -XX:+UseStringDeduplication -jar HypixelCore.jar BEDWARS_LOBBY
     depends_on:
       proxy:
         condition: service_healthy
@@ -159,6 +188,10 @@ services:
       - ./configuration:/app/configuration_files
     networks:
       - hypixel_network
+    deploy:
+      resources:
+        limits:
+          memory: 192M
 
   bedwars_game:
     image: game_server_prepared
@@ -166,7 +199,7 @@ services:
     restart: "unless-stopped"
     environment:
       <<: *forwarding_env
-      SERVICE_CMD: java -Xms512M -Xmx1G -jar HypixelCore.jar BEDWARS_GAME
+      SERVICE_CMD: java -Xms128M -Xmx256M -XX:+UseSerialGC -XX:MaxGCPauseMillis=50 -XX:+UseStringDeduplication -jar HypixelCore.jar BEDWARS_GAME
     depends_on:
       proxy:
         condition: service_healthy
@@ -176,6 +209,10 @@ services:
       - ./configuration:/app/configuration_files
     networks:
       - hypixel_network
+    deploy:
+      resources:
+        limits:
+          memory: 320M
 
   # SkyWars mini-game
   skywars_lobby:
@@ -184,7 +221,7 @@ services:
     restart: "unless-stopped"
     environment:
       <<: *forwarding_env
-      SERVICE_CMD: java -Xms256M -Xmx512M -jar HypixelCore.jar SKYWARS_LOBBY
+      SERVICE_CMD: java -Xms64M -Xmx128M -XX:+UseSerialGC -XX:MaxGCPauseMillis=50 -XX:+UseStringDeduplication -jar HypixelCore.jar SKYWARS_LOBBY
     depends_on:
       proxy:
         condition: service_healthy
@@ -194,6 +231,10 @@ services:
       - ./configuration:/app/configuration_files
     networks:
       - hypixel_network
+    deploy:
+      resources:
+        limits:
+          memory: 192M
 
   skywars_game:
     image: game_server_prepared
@@ -201,7 +242,7 @@ services:
     restart: "unless-stopped"
     environment:
       <<: *forwarding_env
-      SERVICE_CMD: java -Xms512M -Xmx1G -jar HypixelCore.jar SKYWARS_GAME
+      SERVICE_CMD: java -Xms128M -Xmx256M -XX:+UseSerialGC -XX:MaxGCPauseMillis=50 -XX:+UseStringDeduplication -jar HypixelCore.jar SKYWARS_GAME
     depends_on:
       proxy:
         condition: service_healthy
@@ -211,6 +252,10 @@ services:
       - ./configuration:/app/configuration_files
     networks:
       - hypixel_network
+    deploy:
+      resources:
+        limits:
+          memory: 320M
 
   pico_limbo:
     image: ghcr.io/ariksquad/picolimbo:master
@@ -227,6 +272,10 @@ services:
       - ./configuration:/app/configuration_files
     networks:
       - hypixel_network
+    deploy:
+      resources:
+        limits:
+          memory: 128M
 
   # All services
   service_api:
@@ -235,7 +284,7 @@ services:
     restart: "unless-stopped"
     environment:
       <<: *forwarding_env
-      SERVICE_CMD: java -Xms128M -Xmx256M -jar ServiceAPI.jar
+      SERVICE_CMD: java -Xms64M -Xmx128M -XX:+UseSerialGC -XX:MaxGCPauseMillis=50 -jar ServiceAPI.jar
     depends_on:
       proxy:
         condition: service_healthy
@@ -245,6 +294,10 @@ services:
       - ./configuration:/app/configuration_files
     networks:
       - hypixel_network
+    deploy:
+      resources:
+        limits:
+          memory: 192M
 
   service_auctionhouse:
     image: game_server_prepared
@@ -252,7 +305,7 @@ services:
     restart: "unless-stopped"
     environment:
       <<: *forwarding_env
-      SERVICE_CMD: java -Xms256M -Xmx512M -jar ServiceAuctionHouse.jar
+      SERVICE_CMD: java -Xms64M -Xmx128M -XX:+UseSerialGC -XX:MaxGCPauseMillis=50 -jar ServiceAuctionHouse.jar
     depends_on:
       proxy:
         condition: service_healthy
@@ -262,6 +315,10 @@ services:
       - ./configuration:/app/configuration_files
     networks:
       - hypixel_network
+    deploy:
+      resources:
+        limits:
+          memory: 192M
 
   service_bazaar:
     image: game_server_prepared
@@ -269,7 +326,7 @@ services:
     restart: "unless-stopped"
     environment:
       <<: *forwarding_env
-      SERVICE_CMD: java -Xms256M -Xmx512M -jar ServiceBazaar.jar
+      SERVICE_CMD: java -Xms64M -Xmx128M -XX:+UseSerialGC -XX:MaxGCPauseMillis=50 -jar ServiceBazaar.jar
     depends_on:
       proxy:
         condition: service_healthy
@@ -279,6 +336,10 @@ services:
       - ./configuration:/app/configuration_files
     networks:
       - hypixel_network
+    deploy:
+      resources:
+        limits:
+          memory: 192M
 
   service_itemtracker:
     image: game_server_prepared
@@ -286,7 +347,7 @@ services:
     restart: "unless-stopped"
     environment:
       <<: *forwarding_env
-      SERVICE_CMD: java -Xms128M -Xmx256M -jar ServiceItemTracker.jar
+      SERVICE_CMD: java -Xms32M -Xmx64M -XX:+UseSerialGC -XX:MaxGCPauseMillis=50 -jar ServiceItemTracker.jar
     depends_on:
       proxy:
         condition: service_healthy
@@ -296,6 +357,10 @@ services:
       - ./configuration:/app/configuration_files
     networks:
       - hypixel_network
+    deploy:
+      resources:
+        limits:
+          memory: 128M
 
   service_party:
     image: game_server_prepared
@@ -303,7 +368,7 @@ services:
     restart: "unless-stopped"
     environment:
       <<: *forwarding_env
-      SERVICE_CMD: java -Xms128M -Xmx256M -jar ServiceParty.jar
+      SERVICE_CMD: java -Xms32M -Xmx64M -XX:+UseSerialGC -XX:MaxGCPauseMillis=50 -jar ServiceParty.jar
     depends_on:
       proxy:
         condition: service_healthy
@@ -313,6 +378,10 @@ services:
       - ./configuration:/app/configuration_files
     networks:
       - hypixel_network
+    deploy:
+      resources:
+        limits:
+          memory: 128M
 
 volumes:
   mongodb-data:
